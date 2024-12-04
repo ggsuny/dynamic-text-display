@@ -1,43 +1,466 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文字展示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
+        :root {
+            --page-brightness: 100%;
+            --bg-color: #ffffff;
+            --text-color: #000000;
+        }
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 1rem;
+            background-color: var(--bg-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            filter: brightness(var(--page-brightness));
+        }
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
-  </body>
+        .input-section {
+            display: flex;
+            align-items: stretch;
+            padding: 1rem;
+            background-color: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: 72px;
+        }
+
+        .controls-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-right: 2rem;
+            flex-shrink: 0;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: stretch;
+            flex: 1;
+            position: relative;
+        }
+
+        #settingsButton, #fullscreenButton {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+        }
+
+        #settingsIcon, #fullscreenIcon {
+            width: 24px;
+            height: 24px;
+            fill: #666;
+            transition: transform 0.3s ease;
+        }
+
+        #settingsButton:hover #settingsIcon {
+            transform: rotate(45deg);
+        }
+
+        #fullscreenButton:hover #fullscreenIcon {
+            transform: scale(1.1);
+        }
+
+        #textInput {
+            padding: 0.8rem;
+            padding-right: 3rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            width: 100%;
+            height: 100%;
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+            resize: none;
+        }
+
+        #textInput:focus {
+            outline: none;
+            border-color: #2196f3;
+        }
+
+        #submitButton {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+        }
+
+        #submitButton:hover {
+            opacity: 0.8;
+        }
+
+        #sendIcon {
+            width: 24px;
+            height: 24px;
+            fill: #666;
+        }
+
+        #displayArea {
+            flex-grow: 1;
+            height: calc(100vh - 72px);
+            margin-bottom: 0;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            text-align: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #displayArea.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            z-index: 998;
+            border-radius: 0;
+        }
+
+        .input-section {
+            z-index: 999;
+        }
+
+        #displayText {
+            max-width: 100%;
+            max-height: 100%;
+            word-wrap: break-word;
+            line-height: 1.2;
+            color: var(--text-color);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        #displayText.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #displayText.fade-out {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        #progressBar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #progressBar.visible {
+            opacity: 1;
+        }
+
+        .progress-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .progress-dot.active {
+            background: #2196f3;
+            transform: scale(1.2);
+        }
+
+        #settingsPanel {
+            position: fixed;
+            right: 20px;
+            bottom: 100px;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            display: none;
+            z-index: 1000;
+            min-width: 280px;
+        }
+
+        .settings-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .settings-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .settings-label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            color: #666;
+            font-size: 0.9rem;
+            gap: 0.5rem;
+        }
+
+        .settings-icon {
+            width: 16px;
+            height: 16px;
+            fill: #666;
+        }
+
+        .settings-slider-container {
+            position: relative;
+            padding: 0 24px;
+        }
+
+        .settings-slider {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #e0e0e0;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .settings-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #2196f3;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+        }
+
+        .settings-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #2196f3;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+        }
+
+        .slider-icon {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            fill: #666;
+        }
+
+        .slider-icon.left {
+            left: 0;
+        }
+
+        .slider-icon.right {
+            right: 0;
+        }
+
+        .color-preview {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: 2px solid #e0e0e0;
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 0.5rem;
+            }
+
+            .input-section {
+                height: 56px;
+                padding: 0.5rem;
+            }
+
+            .controls-group {
+                width: auto;
+                padding-right: 0.5rem;
+            }
+
+            .input-group {
+                gap: 0.3rem;
+            }
+
+            #textInput {
+                padding: 0.6rem;
+                padding-right: 2.5rem;
+            }
+
+            #submitButton {
+                padding: 6px;
+            }
+
+            #sendIcon {
+                width: 20px;
+                height: 20px;
+            }
+
+            #settingsButton, #fullscreenButton {
+                padding: 6px;
+                min-width: 32px;
+            }
+
+            #settingsIcon, #fullscreenIcon {
+                width: 20px;
+                height: 20px;
+            }
+
+            #displayArea {
+                height: calc(100vh - 56px);
+            }
+        }
+
+        @media (min-width: 601px) and (max-width: 1024px) {
+            #displayArea {
+                margin-bottom: 75px;
+                height: calc(100vh - 110px);
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            #displayArea {
+                height: calc(100vh - 90px);
+                margin-bottom: 60px;
+            }
+
+            .input-section {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="displayArea">
+        <div id="displayText"></div>
+        <div id="progressBar"></div>
+    </div>
+
+    <div class="input-section">
+        <div class="controls-group">
+            <button id="settingsButton">
+                <svg id="settingsIcon" viewBox="0 0 24 24">
+                    <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+                </svg>
+            </button>
+            <button id="fullscreenButton">
+                <svg id="fullscreenIcon" viewBox="0 0 24 24">
+                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                </svg>
+            </button>
+        </div>
+        <div class="input-group">
+            <input type="text" id="textInput" placeholder="请输入文字...">
+            <button id="submitButton">
+                <svg id="sendIcon" viewBox="0 0 24 24">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div id="settingsPanel">
+        <div class="settings-group">
+            <label class="settings-label">
+                <svg class="settings-icon" viewBox="0 0 24 24">
+                    <path d="M20 8.69V4h-4.69L12 0.69L8.69 4H4v4.69L0.69 12L4 15.31V20h4.69L12 23.31L15.31 20H20v-4.69L23.31 12L20 8.69zM12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6s6 2.69 6 6S15.31 18 12 18z"/>
+                </svg>
+                亮度调节
+            </label>
+            <div class="settings-slider-container">
+                <svg class="slider-icon left" viewBox="0 0 24 24">
+                    <path d="M20 8.69V4h-4.69L12 0.69L8.69 4H4v4.69L0.69 12L4 15.31V20h4.69L12 23.31L15.31 20H20v-4.69L23.31 12L20 8.69zM12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6s6 2.69 6 6S15.31 18 12 18z"/>
+                </svg>
+                <input type="range" class="settings-slider" id="brightnessSlider" min="50" max="150" value="100">
+                <svg class="slider-icon right" viewBox="0 0 24 24">
+                    <path d="M20 8.69V4h-4.69L12 0.69L8.69 4H4v4.69L0.69 12L4 15.31V20h4.69L12 23.31L15.31 20H20v-4.69L23.31 12L20 8.69zM12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6s6 2.69 6 6S15.31 18 12 18z"/>
+                </svg>
+            </div>
+        </div>
+        <div class="settings-group">
+            <label class="settings-label">
+                <svg class="settings-icon" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                </svg>
+                背景颜色
+            </label>
+            <div class="settings-slider-container">
+                <svg class="slider-icon left" viewBox="0 0 24 24">
+                    <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                </svg>
+                <input type="range" class="settings-slider" id="bgColorSlider" min="0" max="360" value="0">
+                <svg class="slider-icon right" viewBox="0 0 24 24">
+                    <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"/>
+                </svg>
+                <div class="color-preview" id="bgColorPreview"></div>
+            </div>
+        </div>
+        <div class="settings-group">
+            <label class="settings-label">
+                <svg class="settings-icon" viewBox="0 0 24 24">
+                    <path d="M2.5 4v3h5v12h3V7h5V4h-13zm19 5h-9v3h3v7h3v-7h3V9z"/>
+                </svg>
+                文字颜色
+            </label>
+            <div class="settings-slider-container">
+                <svg class="slider-icon left" viewBox="0 0 24 24">
+                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                </svg>
+                <input type="range" class="settings-slider" id="textColorSlider" min="0" max="360" value="0">
+                <svg class="slider-icon right" viewBox="0 0 24 24">
+                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                </svg>
+                <div class="color-preview" id="textColorPreview"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
 </html>
